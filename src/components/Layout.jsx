@@ -23,6 +23,18 @@ export default function Layout() {
                     }`
                   }
                 >
+                  Home
+                </NavLink>
+                <NavLink
+                  to="/applications"
+                  className={({ isActive }) =>
+                    `px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-gray-900 text-white'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`
+                  }
+                >
                   Applications
                 </NavLink>
                 <NavLink

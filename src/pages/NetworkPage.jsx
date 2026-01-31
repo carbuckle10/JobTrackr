@@ -50,9 +50,9 @@ export default function NetworkPage() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
           {contacts.map(contact => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard key={contact.id} contact={contact} onUpdate={fetchContacts} />
           ))}
         </div>
       )}

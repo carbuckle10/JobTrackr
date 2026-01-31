@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 
 const statusColors = {
   Lead: 'bg-yellow-100 text-yellow-800',
@@ -8,17 +9,34 @@ const statusColors = {
 }
 
 const feelColors = {
-  Great: 'text-green-600',
-  Good: 'text-blue-600',
-  Okay: 'text-yellow-600',
-  Cold: 'text-gray-500'
+  Great: 'bg-green-100 text-green-700',
+  Good: 'bg-blue-100 text-blue-700',
+  Okay: 'bg-yellow-100 text-yellow-700',
+  Cold: 'bg-gray-100 text-gray-700'
 }
 
-export default function ContactCard({ contact }) {
-  const [expanded, setExpanded] = useState(false)
+export default function ContactCard({ contact, onUpdate }) {
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [notesExpanded, setNotesExpanded] = useState(false)
+  const [formData, setFormData] = useState({
+    name: contact.name || '',
+    company: contact.company || '',
+    position: contact.position || '',
+    school: contact.school || '',
+    major: contact.major || '',
+    grad_year: contact.grad_year ?? '',
+    email: contact.email || '',
+    phone: contact.phone || '',
+    last_contact_date: contact.last_contact_date || '',
+    chat_length: contact.chat_length || '',
+    chat_feel: contact.chat_feel || '',
+    relationship_status: contact.relationship_status || '',
+    notes: contact.notes || ''
+  })
 
   const formatDate = (dateString) => {
-    if (!dateString) return null
+    if (!dateString) return '—'
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -26,57 +44,296 @@ export default function ContactCard({ contact }) {
     })
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div
-        className="p-4 cursor-pointer hover:bg-gray-50"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex items-start justify-between">
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    const { error } = await supabase
+      .from('contacts')
+      .update({
+        name: formData.name,
+        company: formData.company || null,
+        position: formData.position || null,
+        school: formData.school || null,
+        major: formData.major || null,
+        grad_year: formData.grad_year ? parseInt(formData.grad_year) : null,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        last_contact_date: formData.last_contact_date || null,
+        chat_length: formData.chat_length || null,
+        chat_feel: formData.chat_feel || null,
+        relationship_status: formData.relationship_status || null,
+        notes: formData.notes || null
+      })
+      .eq('id', contact.id)
+
+    setSaving(false)
+    if (!error) {
+      setEditing(false)
+      onUpdate()
+    }
+  }
+
+  const handleCancel = () => {
+    setFormData({
+      name: contact.name || '',
+      company: contact.company || '',
+      position: contact.position || '',
+      school: contact.school || '',
+      major: contact.major || '',
+      grad_year: contact.grad_year ?? '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      last_contact_date: contact.last_contact_date || '',
+      chat_length: contact.chat_length || '',
+      chat_feel: contact.chat_feel || '',
+      relationship_status: contact.relationship_status || '',
+      notes: contact.notes || ''
+    })
+    setEditing(false)
+  }
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this contact?')) return
+
+    await supabase
+      .from('contacts')
+      .delete()
+      .eq('id', contact.id)
+
+    onUpdate()
+  }
+
+  const notesText = contact.notes || 'No notes'
+  const isLongNotes = notesText.length > 50
+
+  if (editing) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div>
-            <h3 className="font-semibold text-gray-900">{contact.name}</h3>
-            {contact.position && contact.company && (
-              <p className="text-sm text-gray-600">
-                {contact.position} at {contact.company}
-              </p>
-            )}
-            {!contact.position && contact.company && (
-              <p className="text-sm text-gray-600">{contact.company}</p>
-            )}
-            {contact.position && !contact.company && (
-              <p className="text-sm text-gray-600">{contact.position}</p>
-            )}
+            <label className="block text-xs font-medium text-gray-500 mb-1">Name *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
           </div>
-          <div className="flex items-center space-x-2">
-            {contact.relationship_status && (
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[contact.relationship_status] || 'bg-gray-100 text-gray-800'}`}>
-                {contact.relationship_status}
-              </span>
-            )}
-            <svg
-              className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+            <input
+              type="text"
+              name="company"
+              value={formData.company}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Position</label>
+            <input
+              type="text"
+              name="position"
+              value={formData.position}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Relationship</label>
+            <select
+              name="relationship_status"
+              value={formData.relationship_status}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+              <option value="">Select...</option>
+              <option value="Lead">Lead</option>
+              <option value="Connected">Connected</option>
+              <option value="Close">Close</option>
+              <option value="Mentor">Mentor</option>
+            </select>
           </div>
         </div>
 
-        {contact.last_contact_date && (
-          <p className="text-xs text-gray-500 mt-2">
-            Last contact: {formatDate(contact.last_contact_date)}
-          </p>
-        )}
-      </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">School</label>
+            <input
+              type="text"
+              name="school"
+              value={formData.school}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Major</label>
+            <input
+              type="text"
+              name="major"
+              value={formData.major}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+        </div>
 
-      {expanded && (
-        <div className="px-4 pb-4 border-t border-gray-100 pt-3">
-          <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Grad Year</label>
+            <input
+              type="number"
+              name="grad_year"
+              value={formData.grad_year}
+              onChange={handleChange}
+              min="1950"
+              max="2030"
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Last Contact</label>
+            <input
+              type="date"
+              name="last_contact_date"
+              value={formData.last_contact_date}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Chat Length</label>
+            <input
+              type="text"
+              name="chat_length"
+              value={formData.chat_length}
+              onChange={handleChange}
+              placeholder="e.g., 30 min"
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Chat Feel</label>
+            <select
+              name="chat_feel"
+              value={formData.chat_feel}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            >
+              <option value="">Select...</option>
+              <option value="Great">Great</option>
+              <option value="Good">Good</option>
+              <option value="Okay">Okay</option>
+              <option value="Cold">Cold</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+          <textarea
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            rows={2}
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            placeholder="Add notes..."
+          />
+        </div>
+
+        <div className="mt-3 flex justify-end space-x-2">
+          <button
+            onClick={handleCancel}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-gray-900">{contact.name}</h3>
+              {(contact.position || contact.company) && (
+                <p className="text-sm text-gray-600">
+                  {contact.position}{contact.position && contact.company && ' at '}{contact.company}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col items-end space-y-2">
+              <div className="flex items-center space-x-2">
+                {contact.chat_feel && (
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${feelColors[contact.chat_feel] || 'bg-gray-100 text-gray-700'}`}>
+                    {contact.chat_feel}
+                  </span>
+                )}
+                {contact.relationship_status && (
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[contact.relationship_status] || 'bg-gray-100 text-gray-800'}`}>
+                    {contact.relationship_status}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-xs text-gray-500 hover:text-gray-900 font-medium"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="text-xs text-red-500 hover:text-red-700 font-medium"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
             {contact.email && (
               <div>
-                <span className="text-gray-500">Email:</span>{' '}
+                <span className="text-xs text-gray-500">Email:</span>{' '}
                 <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline">
                   {contact.email}
                 </a>
@@ -84,50 +341,57 @@ export default function ContactCard({ contact }) {
             )}
             {contact.phone && (
               <div>
-                <span className="text-gray-500">Phone:</span>{' '}
+                <span className="text-xs text-gray-500">Phone:</span>{' '}
                 <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline">
                   {contact.phone}
                 </a>
               </div>
             )}
+            <div>
+              <span className="text-xs text-gray-500">Last Contact:</span>{' '}
+              <span className="text-gray-900">{formatDate(contact.last_contact_date)}</span>
+            </div>
             {contact.school && (
               <div>
-                <span className="text-gray-500">School:</span> {contact.school}
+                <span className="text-xs text-gray-500">School:</span>{' '}
+                <span className="text-gray-900">{contact.school}</span>
               </div>
             )}
             {contact.major && (
               <div>
-                <span className="text-gray-500">Major:</span> {contact.major}
+                <span className="text-xs text-gray-500">Major:</span>{' '}
+                <span className="text-gray-900">{contact.major}</span>
               </div>
             )}
             {contact.grad_year && (
               <div>
-                <span className="text-gray-500">Grad Year:</span> {contact.grad_year}
+                <span className="text-xs text-gray-500">Grad:</span>{' '}
+                <span className="text-gray-900">{contact.grad_year}</span>
               </div>
             )}
             {contact.chat_length && (
               <div>
-                <span className="text-gray-500">Chat Length:</span> {contact.chat_length}
+                <span className="text-xs text-gray-500">Chat:</span>{' '}
+                <span className="text-gray-900">{contact.chat_length}</span>
               </div>
             )}
-            {contact.chat_feel && (
-              <div>
-                <span className="text-gray-500">Chat Feel:</span>{' '}
-                <span className={feelColors[contact.chat_feel] || 'text-gray-900'}>
-                  {contact.chat_feel}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {contact.notes && (
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <p className="text-sm text-gray-500 mb-1">Notes:</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{contact.notes}</p>
+            <div className="flex items-center">
+              <span className="text-xs text-gray-500">Notes:</span>{' '}
+              <span className={`text-gray-700 ml-1 ${!notesExpanded && isLongNotes ? 'truncate max-w-[200px]' : ''}`}>
+                {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 50) + '...' : notesText)}
+              </span>
+              {isLongNotes && (
+                <button
+                  onClick={() => setNotesExpanded(!notesExpanded)}
+                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  {notesExpanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
             </div>
-          )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

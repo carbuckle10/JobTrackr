@@ -50,9 +50,9 @@ export default function ApplicationsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-4">
           {applications.map(application => (
-            <ApplicationCard key={application.id} application={application} />
+            <ApplicationCard key={application.id} application={application} onUpdate={fetchApplications} />
           ))}
         </div>
       )}
