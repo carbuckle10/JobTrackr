@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 const statusColors = {
@@ -16,9 +17,12 @@ const stageColors = {
 }
 
 export default function ApplicationCard({ application, onUpdate }) {
+  const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notesExpanded, setNotesExpanded] = useState(false)
+  const [contacts, setContacts] = useState([])
+  const [selectedContactIds, setSelectedContactIds] = useState([])
   const [formData, setFormData] = useState({
     company: application.company || '',
     position: application.position || '',
@@ -40,6 +44,21 @@ export default function ApplicationCard({ application, onUpdate }) {
     })
   }
 
+  useEffect(() => {
+    if (editing) {
+      const fetchContactsAndLinks = async () => {
+        const [contactsRes, linksRes] = await Promise.all([
+          supabase.from('contacts').select('id, name, company').order('name', { ascending: true }),
+          supabase.from('application_contacts').select('contact_id').eq('application_id', application.id)
+        ])
+
+        setContacts(contactsRes.data || [])
+        setSelectedContactIds(linksRes.data?.map(l => l.contact_id) || [])
+      }
+      fetchContactsAndLinks()
+    }
+  }, [editing, application.id])
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -47,7 +66,9 @@ export default function ApplicationCard({ application, onUpdate }) {
 
   const handleSave = async () => {
     setSaving(true)
-    const { error } = await supabase
+
+    // Update application fields
+    const { error: appError } = await supabase
       .from('applications')
       .update({
         company: formData.company,
@@ -62,11 +83,26 @@ export default function ApplicationCard({ application, onUpdate }) {
       })
       .eq('id', application.id)
 
-    setSaving(false)
-    if (!error) {
-      setEditing(false)
-      onUpdate()
+    if (appError) {
+      setSaving(false)
+      return
     }
+
+    // Sync contact relationships
+    await supabase.from('application_contacts').delete().eq('application_id', application.id)
+
+    if (selectedContactIds.length > 0) {
+      await supabase.from('application_contacts').insert(
+        selectedContactIds.map(contact_id => ({
+          application_id: application.id,
+          contact_id
+        }))
+      )
+    }
+
+    setSaving(false)
+    setEditing(false)
+    onUpdate()
   }
 
   const handleCancel = () => {
@@ -124,7 +160,36 @@ export default function ApplicationCard({ application, onUpdate }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Connection</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Contacts</label>
+            <div className="max-h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-white">
+              {contacts.length === 0 ? (
+                <p className="text-xs text-gray-400">No contacts available</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {contacts.map(contact => (
+                    <label key={contact.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={selectedContactIds.includes(contact.id)}
+                        onChange={(e) => {
+                          setSelectedContactIds(prev =>
+                            e.target.checked ? [...prev, contact.id] : prev.filter(id => id !== contact.id)
+                          )
+                        }}
+                        className="w-4 h-4 text-gray-900 rounded"
+                      />
+                      <span className="truncate">
+                        {contact.name}
+                        {contact.company && <span className="text-gray-500"> ({contact.company})</span>}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Connection Notes</label>
             <input
               type="text"
               name="connection"
@@ -245,77 +310,93 @@ export default function ApplicationCard({ application, onUpdate }) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-gray-900">{application.company}</h3>
-              {application.position && (
-                <p className="text-sm text-gray-600">{application.position}</p>
-              )}
-            </div>
-            <div className="flex flex-col items-end space-y-2">
-              <div className="flex items-center space-x-2">
-                {application.interview_stage && (
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${stageColors[application.interview_stage] || 'bg-gray-100 text-gray-700'}`}>
-                    {application.interview_stage}
-                  </span>
-                )}
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[application.status] || 'bg-gray-100 text-gray-800'}`}>
-                  {application.status || 'Pending'}
-                </span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setEditing(true)}
-                  className="text-xs text-gray-500 hover:text-gray-900 font-medium"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="text-xs text-red-500 hover:text-red-700 font-medium"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="font-semibold text-gray-900">{application.company}</h3>
+          {application.position && (
+            <p className="text-sm text-gray-600">{application.position}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {application.interview_stage && (
+            <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${stageColors[application.interview_stage] || 'bg-gray-100 text-gray-700'}`}>
+              {application.interview_stage}
+            </span>
+          )}
+          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusColors[application.status] || 'bg-gray-100 text-gray-800'}`}>
+            {application.status || 'Pending'}
+          </span>
+          <div className="w-px h-5 bg-gray-200" />
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs px-2 py-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded font-medium transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            className="text-xs px-2 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded font-medium transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            <div>
-              <span className="text-xs text-gray-500">Applied:</span>{' '}
-              <span className="text-gray-900">{formatDate(application.date_applied)}</span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500">Responded:</span>{' '}
-              <span className={application.date_responded ? 'text-gray-900' : 'text-yellow-600'}>
-                {application.date_responded ? formatDate(application.date_responded) : 'Response pending'}
-              </span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500"># Interviews:</span>{' '}
-              <span className="text-gray-900">{application.num_interviews ?? 0}</span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500">Connection:</span>{' '}
-              <span className="text-gray-900">{application.connection || '—'}</span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-xs text-gray-500">Notes:</span>{' '}
-              <span className={`text-gray-700 ml-1 ${!notesExpanded && isLongNotes ? 'truncate max-w-[200px]' : ''}`}>
-                {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 50) + '...' : notesText)}
-              </span>
-              {isLongNotes && (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Applied</p>
+          <p className="text-sm font-medium text-gray-900">{formatDate(application.date_applied)}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Responded</p>
+          <p className={`text-sm font-medium ${application.date_responded ? 'text-gray-900' : 'text-yellow-600'}`}>
+            {application.date_responded ? formatDate(application.date_responded) : 'Pending'}
+          </p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1"># Interviews</p>
+          <p className="text-sm font-medium text-gray-900">{application.num_interviews ?? 0}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Contacts</p>
+          {application.application_contacts?.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {application.application_contacts.map(({ contact }) => (
                 <button
-                  onClick={() => setNotesExpanded(!notesExpanded)}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  key={contact.id}
+                  onClick={() => navigate(`/network?highlight=${contact.id}`)}
+                  className="inline-flex items-center gap-1 text-xs bg-white border border-gray-300 text-gray-700 px-2 py-1 rounded hover:bg-gray-100 hover:border-gray-400 transition-colors"
                 >
-                  {notesExpanded ? 'Show less' : 'Show more'}
+                  <span className="font-medium">{contact.name}</span>
+                  {contact.company && <span className="text-gray-500">• {contact.company}</span>}
                 </button>
-              )}
+              ))}
             </div>
+          ) : (
+            <p className="text-sm font-medium text-gray-900">—</p>
+          )}
+        </div>
+        {application.connection && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-xs text-gray-500 mb-1">Connection Notes</p>
+            <p className="text-sm font-medium text-gray-900 truncate">{application.connection}</p>
           </div>
+        )}
+        <div className="bg-gray-50 rounded-lg p-3 md:col-span-1 col-span-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            {isLongNotes && (
+              <button
+                onClick={() => setNotesExpanded(!notesExpanded)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {notesExpanded ? 'Less' : 'More'}
+              </button>
+            )}
+          </div>
+          <p className={`text-sm text-gray-700 ${!notesExpanded ? 'truncate' : ''}`}>
+            {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 30) + '...' : notesText)}
+          </p>
         </div>
       </div>
     </div>

@@ -289,107 +289,101 @@ export default function ContactCard({ contact, onUpdate }) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-gray-900">{contact.name}</h3>
-              {(contact.position || contact.company) && (
-                <p className="text-sm text-gray-600">
-                  {contact.position}{contact.position && contact.company && ' at '}{contact.company}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col items-end space-y-2">
-              <div className="flex items-center space-x-2">
-                {contact.chat_feel && (
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${feelColors[contact.chat_feel] || 'bg-gray-100 text-gray-700'}`}>
-                    {contact.chat_feel}
-                  </span>
-                )}
-                {contact.relationship_status && (
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[contact.relationship_status] || 'bg-gray-100 text-gray-800'}`}>
-                    {contact.relationship_status}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setEditing(true)}
-                  className="text-xs text-gray-500 hover:text-gray-900 font-medium"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="text-xs text-red-500 hover:text-red-700 font-medium"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="font-semibold text-gray-900">{contact.name}</h3>
+          {(contact.position || contact.company) && (
+            <p className="text-sm text-gray-600">
+              {contact.position}{contact.position && contact.company && ' at '}{contact.company}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {contact.chat_feel && (
+            <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${feelColors[contact.chat_feel] || 'bg-gray-100 text-gray-700'}`}>
+              {contact.chat_feel}
+            </span>
+          )}
+          {contact.relationship_status && (
+            <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusColors[contact.relationship_status] || 'bg-gray-100 text-gray-800'}`}>
+              {contact.relationship_status}
+            </span>
+          )}
+          <div className="w-px h-5 bg-gray-200" />
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs px-2 py-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded font-medium transition-colors"
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            className="text-xs px-2 py-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded font-medium transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            {contact.email && (
-              <div>
-                <span className="text-xs text-gray-500">Email:</span>{' '}
-                <a href={`mailto:${contact.email}`} className="text-blue-600 hover:underline">
-                  {contact.email}
-                </a>
-              </div>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Email</p>
+          {contact.email ? (
+            <a href={`mailto:${contact.email}`} className="text-sm font-medium text-blue-600 hover:underline truncate block">
+              {contact.email}
+            </a>
+          ) : (
+            <p className="text-sm font-medium text-gray-900">—</p>
+          )}
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Phone</p>
+          {contact.phone ? (
+            <a href={`tel:${contact.phone}`} className="text-sm font-medium text-blue-600 hover:underline">
+              {contact.phone}
+            </a>
+          ) : (
+            <p className="text-sm font-medium text-gray-900">—</p>
+          )}
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Last Contact</p>
+          <p className="text-sm font-medium text-gray-900">{formatDate(contact.last_contact_date)}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">School</p>
+          <p className="text-sm font-medium text-gray-900 truncate">{contact.school || '—'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Major</p>
+          <p className="text-sm font-medium text-gray-900 truncate">{contact.major || '—'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Grad Year</p>
+          <p className="text-sm font-medium text-gray-900">{contact.grad_year || '—'}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">
+        <div className="bg-gray-50 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Chat Length</p>
+          <p className="text-sm font-medium text-gray-900">{contact.chat_length || '—'}</p>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 md:col-span-5 col-span-1">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            {isLongNotes && (
+              <button
+                onClick={() => setNotesExpanded(!notesExpanded)}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              >
+                {notesExpanded ? 'Less' : 'More'}
+              </button>
             )}
-            {contact.phone && (
-              <div>
-                <span className="text-xs text-gray-500">Phone:</span>{' '}
-                <a href={`tel:${contact.phone}`} className="text-blue-600 hover:underline">
-                  {contact.phone}
-                </a>
-              </div>
-            )}
-            <div>
-              <span className="text-xs text-gray-500">Last Contact:</span>{' '}
-              <span className="text-gray-900">{formatDate(contact.last_contact_date)}</span>
-            </div>
-            {contact.school && (
-              <div>
-                <span className="text-xs text-gray-500">School:</span>{' '}
-                <span className="text-gray-900">{contact.school}</span>
-              </div>
-            )}
-            {contact.major && (
-              <div>
-                <span className="text-xs text-gray-500">Major:</span>{' '}
-                <span className="text-gray-900">{contact.major}</span>
-              </div>
-            )}
-            {contact.grad_year && (
-              <div>
-                <span className="text-xs text-gray-500">Grad:</span>{' '}
-                <span className="text-gray-900">{contact.grad_year}</span>
-              </div>
-            )}
-            {contact.chat_length && (
-              <div>
-                <span className="text-xs text-gray-500">Chat:</span>{' '}
-                <span className="text-gray-900">{contact.chat_length}</span>
-              </div>
-            )}
-            <div className="flex items-center">
-              <span className="text-xs text-gray-500">Notes:</span>{' '}
-              <span className={`text-gray-700 ml-1 ${!notesExpanded && isLongNotes ? 'truncate max-w-[200px]' : ''}`}>
-                {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 50) + '...' : notesText)}
-              </span>
-              {isLongNotes && (
-                <button
-                  onClick={() => setNotesExpanded(!notesExpanded)}
-                  className="ml-2 text-xs text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  {notesExpanded ? 'Show less' : 'Show more'}
-                </button>
-              )}
-            </div>
           </div>
+          <p className={`text-sm text-gray-700 ${!notesExpanded ? 'truncate' : ''}`}>
+            {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 80) + '...' : notesText)}
+          </p>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -6,9 +6,11 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [contacts, setContacts] = useState([])
   const [formData, setFormData] = useState({
     company: '',
     position: '',
+    selectedContactIds: [],
     connection: '',
     date_applied: '',
     date_responded: '',
@@ -17,6 +19,23 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
     status: 'Pending',
     notes: ''
   })
+
+  useEffect(() => {
+    const fetchContacts = async () => {
+      const { data } = await supabase
+        .from('contacts')
+        .select('id, name, company, position')
+        .order('name', { ascending: true })
+
+      if (data) {
+        setContacts(data)
+      }
+    }
+
+    if (isOpen) {
+      fetchContacts()
+    }
+  }, [isOpen])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -28,7 +47,8 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
     setError('')
     setLoading(true)
 
-    const { error } = await supabase.from('applications').insert({
+    // Insert application
+    const { data: newApp, error: appError } = await supabase.from('applications').insert({
       user_id: user.id,
       company: formData.company,
       position: formData.position || null,
@@ -39,21 +59,32 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
       num_interviews: formData.num_interviews ? parseInt(formData.num_interviews) : null,
       status: formData.status || null,
       notes: formData.notes || null
-    })
+    }).select().single()
+
+    if (appError) {
+      setError(appError.message)
+      setLoading(false)
+      return
+    }
+
+    // Insert contact links if any selected
+    if (formData.selectedContactIds.length > 0) {
+      await supabase.from('application_contacts').insert(
+        formData.selectedContactIds.map(contact_id => ({
+          application_id: newApp.id,
+          contact_id
+        }))
+      )
+    }
 
     setLoading(false)
-
-    if (error) {
-      setError(error.message)
-    } else {
-      setFormData({
-        company: '', position: '', connection: '', date_applied: '',
-        date_responded: '', interview_stage: '', num_interviews: '',
-        status: 'Pending', notes: ''
-      })
-      onApplicationAdded()
-      onClose()
-    }
+    setFormData({
+      company: '', position: '', selectedContactIds: [], connection: '', date_applied: '',
+      date_responded: '', interview_stage: '', num_interviews: '',
+      status: 'Pending', notes: ''
+    })
+    onApplicationAdded()
+    onClose()
   }
 
   if (!isOpen) return null
@@ -102,14 +133,49 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Connection to Business
+                Contacts from Network
+              </label>
+              <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2 bg-white">
+                {contacts.length === 0 ? (
+                  <p className="text-xs text-gray-400">No contacts available</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {contacts.map(contact => (
+                      <label key={contact.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedContactIds.includes(contact.id)}
+                          onChange={(e) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedContactIds: e.target.checked
+                                ? [...prev.selectedContactIds, contact.id]
+                                : prev.selectedContactIds.filter(id => id !== contact.id)
+                            }))
+                          }}
+                          className="w-4 h-4 text-gray-900 rounded"
+                        />
+                        <span className="truncate">
+                          {contact.name}
+                          {contact.company && <span className="text-gray-500"> ({contact.company})</span>}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Connection Notes
               </label>
               <input
                 type="text"
                 name="connection"
                 value={formData.connection}
                 onChange={handleChange}
-                placeholder="e.g., Referral from John, LinkedIn, Career Fair"
+                placeholder="e.g., Met at career fair, Alumni connection"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>
