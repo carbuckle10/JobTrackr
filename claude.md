@@ -1,5 +1,27 @@
 # JobTrackr
 
+## Product Overview
+
+JobTrackr is a personal job search organizer that gives active job seekers a single source of truth for their application pipeline and professional contacts. It replaces scattered spreadsheets and forgotten follow-ups with a clean, connected workspace where everything about your job search lives in one place.
+
+## Target User
+
+College students and early-career professionals (roughly 21–27) who are actively applying to multiple jobs simultaneously, doing informational interviews and networking, and managing their job search on their own. They're comfortable with web apps, detail-oriented, and frustrated by the cognitive overhead of tracking everything across their head, email, and a spreadsheet.
+
+## Value Proposition
+
+When you're applying to 10+ companies at once and networking with dozens of contacts, things fall through the cracks. JobTrackr connects your application pipeline and your professional network so you always know where you stand, who's involved in each process, and who you haven't talked to in a while — without ever having to dig through your inbox to find out.
+
+## Tech Stack
+
+- **Frontend:** React 19 with Vite
+- **Styling:** Tailwind CSS v4
+- **Database & Auth:** Supabase (PostgreSQL + Row Level Security)
+- **Routing:** React Router v6
+- **Deployment:** Vercel
+
+---
+
 A job application tracking app built with React and Supabase. Track job applications, manage professional contacts, and monitor your job search progress.
 
 ## Features
