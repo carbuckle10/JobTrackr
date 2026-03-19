@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import HomePage from './pages/HomePage'
 import ApplicationsPage from './pages/ApplicationsPage'
 import NetworkPage from './pages/NetworkPage'
+import SettingsPage from './pages/SettingsPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -25,6 +26,7 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="applications" element={<ApplicationsPage />} />
         <Route path="network" element={<NetworkPage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>
   )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getDeadlineUrgency, formatDeadlineDate } from '../lib/deadlineUtils'
 
 const statusColors = {
   Pending: 'bg-yellow-100 text-yellow-800',
@@ -28,6 +29,7 @@ export default function ApplicationCard({ application, onUpdate }) {
     position: application.position || '',
     connection: application.connection || '',
     date_applied: application.date_applied || '',
+    deadline: application.deadline || '',
     status: application.status || 'Pending',
     interview_stage: application.interview_stage || '',
     num_interviews: application.num_interviews ?? '',
@@ -67,7 +69,6 @@ export default function ApplicationCard({ application, onUpdate }) {
   const handleSave = async () => {
     setSaving(true)
 
-    // Update application fields
     const { error: appError } = await supabase
       .from('applications')
       .update({
@@ -75,6 +76,7 @@ export default function ApplicationCard({ application, onUpdate }) {
         position: formData.position || null,
         connection: formData.connection || null,
         date_applied: formData.date_applied || null,
+        deadline: formData.deadline || null,
         status: formData.status,
         interview_stage: formData.interview_stage || null,
         num_interviews: formData.num_interviews ? parseInt(formData.num_interviews) : null,
@@ -88,7 +90,6 @@ export default function ApplicationCard({ application, onUpdate }) {
       return
     }
 
-    // Sync contact relationships
     await supabase.from('application_contacts').delete().eq('application_id', application.id)
 
     if (selectedContactIds.length > 0) {
@@ -111,6 +112,7 @@ export default function ApplicationCard({ application, onUpdate }) {
       position: application.position || '',
       connection: application.connection || '',
       date_applied: application.date_applied || '',
+      deadline: application.deadline || '',
       status: application.status || 'Pending',
       interview_stage: application.interview_stage || '',
       num_interviews: application.num_interviews ?? '',
@@ -133,10 +135,11 @@ export default function ApplicationCard({ application, onUpdate }) {
 
   const notesText = application.notes || 'No notes'
   const isLongNotes = notesText.length > 50
+  const deadlineUrgency = getDeadlineUrgency(application.deadline)
 
   if (editing) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Company *</label>
@@ -204,6 +207,16 @@ export default function ApplicationCard({ application, onUpdate }) {
               type="date"
               name="date_applied"
               value={formData.date_applied}
+              onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Deadline</label>
+            <input
+              type="date"
+              name="deadline"
+              value={formData.deadline}
               onChange={handleChange}
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
@@ -309,12 +322,12 @@ export default function ApplicationCard({ application, onUpdate }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-4">
         <div>
           <h3 className="font-semibold text-gray-900">{application.company}</h3>
           {application.position && (
-            <p className="text-sm text-gray-600">{application.position}</p>
+            <p className="text-sm text-gray-500">{application.position}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -343,22 +356,31 @@ export default function ApplicationCard({ application, onUpdate }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Applied</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Applied</p>
           <p className="text-sm font-medium text-gray-900">{formatDate(application.date_applied)}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Responded</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Responded</p>
           <p className={`text-sm font-medium ${application.date_responded ? 'text-gray-900' : 'text-yellow-600'}`}>
             {application.date_responded ? formatDate(application.date_responded) : 'Pending'}
           </p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1"># Interviews</p>
+        {application.deadline && (
+          <div className="bg-gray-50/60 rounded-md p-2.5">
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Deadline</p>
+            <p className="text-sm font-medium text-gray-900">{formatDeadlineDate(application.deadline)}</p>
+            {deadlineUrgency && (
+              <p className={`text-xs mt-0.5 ${deadlineUrgency.colorClass}`}>{deadlineUrgency.label}</p>
+            )}
+          </div>
+        )}
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5"># Interviews</p>
           <p className="text-sm font-medium text-gray-900">{application.num_interviews ?? 0}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Contacts</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Contacts</p>
           {application.application_contacts?.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {application.application_contacts.map(({ contact }) => (
@@ -377,14 +399,14 @@ export default function ApplicationCard({ application, onUpdate }) {
           )}
         </div>
         {application.connection && (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <p className="text-xs text-gray-500 mb-1">Connection Notes</p>
+          <div className="bg-gray-50/60 rounded-md p-2.5">
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Connection Notes</p>
             <p className="text-sm font-medium text-gray-900 truncate">{application.connection}</p>
           </div>
         )}
-        <div className="bg-gray-50 rounded-lg p-3 md:col-span-1 col-span-2">
+        <div className="bg-gray-50/60 rounded-md p-2.5 md:col-span-1 col-span-2">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Notes</p>
             {isLongNotes && (
               <button
                 onClick={() => setNotesExpanded(!notesExpanded)}

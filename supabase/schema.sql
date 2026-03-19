@@ -211,3 +211,43 @@ SELECT id, contact_id, created_at
 FROM applications
 WHERE contact_id IS NOT NULL
 ON CONFLICT (application_id, contact_id) DO NOTHING;
+
+-- ============================================================================
+-- MIGRATION: Add deadline to applications
+-- ============================================================================
+
+ALTER TABLE applications
+  ADD COLUMN IF NOT EXISTS deadline DATE;
+
+-- ============================================================================
+-- MIGRATION: User preferences (email reminders, follow-up interval)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS user_preferences (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
+  follow_up_reminder_days INTEGER DEFAULT 14,
+  email_reminders_enabled BOOLEAN DEFAULT false,
+  last_reminder_sent_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own preferences"
+  ON user_preferences FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own preferences"
+  ON user_preferences FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own preferences"
+  ON user_preferences FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE TRIGGER update_user_preferences_updated_at
+  BEFORE UPDATE ON user_preferences
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

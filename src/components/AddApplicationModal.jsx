@@ -13,6 +13,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
     selectedContactIds: [],
     connection: '',
     date_applied: '',
+    deadline: '',
     date_responded: '',
     interview_stage: '',
     num_interviews: '',
@@ -54,6 +55,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
       position: formData.position || null,
       connection: formData.connection || null,
       date_applied: formData.date_applied || null,
+      deadline: formData.deadline || null,
       date_responded: formData.date_responded || null,
       interview_stage: formData.interview_stage || null,
       num_interviews: formData.num_interviews ? parseInt(formData.num_interviews) : null,
@@ -80,7 +82,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
     setLoading(false)
     setFormData({
       company: '', position: '', selectedContactIds: [], connection: '', date_applied: '',
-      date_responded: '', interview_stage: '', num_interviews: '',
+      deadline: '', date_responded: '', interview_stage: '', num_interviews: '',
       status: 'Pending', notes: ''
     })
     onApplicationAdded()
@@ -204,6 +206,19 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
                 type="date"
                 name="date_applied"
                 value={formData.date_applied}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Deadline
+              </label>
+              <input
+                type="date"
+                name="deadline"
+                value={formData.deadline}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />

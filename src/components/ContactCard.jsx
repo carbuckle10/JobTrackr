@@ -112,7 +112,7 @@ export default function ContactCard({ contact, onUpdate }) {
 
   if (editing) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Name *</label>
@@ -288,12 +288,12 @@ export default function ContactCard({ contact, onUpdate }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-3">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-4">
         <div>
           <h3 className="font-semibold text-gray-900">{contact.name}</h3>
           {(contact.position || contact.company) && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-500">
               {contact.position}{contact.position && contact.company && ' at '}{contact.company}
             </p>
           )}
@@ -326,8 +326,8 @@ export default function ContactCard({ contact, onUpdate }) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Email</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
           {contact.email ? (
             <a href={`mailto:${contact.email}`} className="text-sm font-medium text-blue-600 hover:underline truncate block">
               {contact.email}
@@ -336,8 +336,8 @@ export default function ContactCard({ contact, onUpdate }) {
             <p className="text-sm font-medium text-gray-900">—</p>
           )}
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Phone</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
           {contact.phone ? (
             <a href={`tel:${contact.phone}`} className="text-sm font-medium text-blue-600 hover:underline">
               {contact.phone}
@@ -346,32 +346,32 @@ export default function ContactCard({ contact, onUpdate }) {
             <p className="text-sm font-medium text-gray-900">—</p>
           )}
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Last Contact</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Last Contact</p>
           <p className="text-sm font-medium text-gray-900">{formatDate(contact.last_contact_date)}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">School</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">School</p>
           <p className="text-sm font-medium text-gray-900 truncate">{contact.school || '—'}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Major</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Major</p>
           <p className="text-sm font-medium text-gray-900 truncate">{contact.major || '—'}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Grad Year</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Grad Year</p>
           <p className="text-sm font-medium text-gray-900">{contact.grad_year || '—'}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-3">
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-500 mb-1">Chat Length</p>
+        <div className="bg-gray-50/60 rounded-md p-2.5">
+          <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Chat Length</p>
           <p className="text-sm font-medium text-gray-900">{contact.chat_length || '—'}</p>
         </div>
-        <div className="bg-gray-50 rounded-lg p-3 md:col-span-5 col-span-1">
+        <div className="bg-gray-50/60 rounded-md p-2.5 md:col-span-5 col-span-1">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Notes</p>
             {isLongNotes && (
               <button
                 onClick={() => setNotesExpanded(!notesExpanded)}

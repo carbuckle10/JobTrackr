@@ -60,10 +60,10 @@ export default function NetworkPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Network</h2>
+        <h2 className="text-xl font-semibold text-gray-900">Network</h2>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800"
+          className="px-3.5 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 shadow-sm"
         >
           + Add Contact
         </button>
@@ -75,7 +75,7 @@ export default function NetworkPage() {
           placeholder="Search contacts by name, company, position, school, or email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-colors"
         />
       </div>
 
