@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function SettingsPage() {
-  const { user } = useAuth()
+  const { user, deleteAccount } = useAuth()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
   const [prefs, setPrefs] = useState({
     email_reminders_enabled: false,
     follow_up_reminder_days: 14
@@ -53,6 +59,19 @@ export default function SettingsPage() {
     } else {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return
+    setDeleting(true)
+    setDeleteError(null)
+    const { error } = await deleteAccount()
+    if (error) {
+      setDeleteError(error.message)
+      setDeleting(false)
+    } else {
+      navigate('/login')
     }
   }
 
@@ -147,7 +166,64 @@ export default function SettingsPage() {
             <span className="text-sm text-red-600">{saveError}</span>
           )}
         </div>
+
+        {/* Danger Zone */}
+        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+          <h3 className="font-semibold text-red-600 mb-1">Danger Zone</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Permanently delete your account and all associated data. This cannot be undone.
+          </p>
+          <button
+            onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(null) }}
+            className="px-4 py-2 bg-white text-red-600 text-sm font-medium rounded-md border border-red-300 hover:bg-red-50 shadow-sm"
+          >
+            Delete Account
+          </button>
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete your account?</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              This will permanently delete all your applications, contacts, and settings.
+              <span className="font-medium text-gray-900"> This action cannot be undone.</span>
+            </p>
+            <p className="text-sm text-gray-700 mb-2">
+              Type <span className="font-mono font-semibold">DELETE</span> to confirm:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+              autoFocus
+            />
+            {deleteError && (
+              <p className="text-sm text-red-600 mb-3">{deleteError}</p>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || deleting}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Deleting...' : 'Delete Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

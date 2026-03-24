@@ -32,6 +32,8 @@ A job application tracking app built with React and Supabase. Track job applicat
 - **Search & Filter:** Quickly find applications and contacts with real-time search
 - **Dashboard:** View statistics and recent activity at a glance
 - **Cross-Navigation:** Click contact names to navigate and highlight them in your network
+- **Notification Bell:** In-app bell icon in the nav shows overdue follow-up contacts based on a configurable interval
+- **Settings:** User preferences for follow-up reminder interval and notification toggle
 
 ## Tech Stack
 
@@ -46,20 +48,23 @@ A job application tracking app built with React and Supabase. Track job applicat
 ```
 src/
 ├── components/        # Reusable UI components
-│   ├── Layout.jsx              # Main app layout with header/nav
+│   ├── Layout.jsx              # Main app layout with header/nav + notification bell
 │   ├── ProtectedRoute.jsx      # Auth route guard
 │   ├── ApplicationCard.jsx     # Application display/edit card
 │   ├── ContactCard.jsx         # Contact display/edit card
 │   ├── AddApplicationModal.jsx # Modal for creating applications
-│   └── AddContactModal.jsx     # Modal for creating contacts
+│   ├── AddContactModal.jsx     # Modal for creating contacts
+│   └── charts/                 # Chart components for analytics
 ├── contexts/          # React context providers
 │   └── AuthContext.jsx         # Authentication state
 ├── lib/               # Utilities and configurations
-│   └── supabase.js             # Supabase client
+│   ├── supabase.js             # Supabase client
+│   └── deadlineUtils.js        # Deadline calculation helpers
 ├── pages/             # Route page components
-│   ├── DashboardPage.jsx       # Home page with stats
-│   ├── ApplicationsPage.jsx    # Applications list with search
+│   ├── HomePage.jsx            # Home/dashboard page with stats
+│   ├── ApplicationsPage.jsx    # Applications list with search + filters
 │   ├── NetworkPage.jsx         # Contacts list with search
+│   ├── SettingsPage.jsx        # User preferences (notification bell interval)
 │   ├── LoginPage.jsx           # Login form
 │   └── SignUpPage.jsx          # Sign up form
 ├── App.jsx            # Router configuration
@@ -75,9 +80,10 @@ supabase/
 
 ### Tables
 
-- **applications:** Job application records with company, position, status, salary, interview stages, and notes
+- **applications:** Job application records with company, position, status, salary, interview stages, deadline, and notes
 - **contacts:** Professional network contacts with name, company, position, school, and contact info
 - **application_contacts:** Junction table for many-to-many relationships between applications and contacts
+- **user_preferences:** Per-user settings — `follow_up_reminder_days` (int, default 14), `email_reminders_enabled` (bool, stores the in-app bell toggle)
 
 ### Row Level Security (RLS)
 
@@ -146,3 +152,11 @@ Both ApplicationCard and ContactCard support:
 - **Edit mode:** Inline editing with save/cancel
 - **Delete:** Confirmation before deletion
 - Optimistic UI updates via `onUpdate` callback
+
+### Notification Bell
+
+`Layout.jsx` fetches `user_preferences` on mount. If `email_reminders_enabled` is true, it queries contacts where `last_contact_date < now - follow_up_reminder_days` OR `last_contact_date IS NULL`, capped at 10 results. A bell icon in the nav header shows a red badge with the count. Clicking the bell opens a dropdown listing overdue contacts; clicking a contact navigates to `/network?highlight=<id>`. The column name `email_reminders_enabled` is kept as-is in the DB — only the UI label changed to "Show notification bell."
+
+### Settings Page
+
+`SettingsPage.jsx` reads/writes `user_preferences` via upsert on `user_id`. Manages two fields: `email_reminders_enabled` (toggle) and `follow_up_reminder_days` (number input, 1–90).
