@@ -10,6 +10,7 @@ export default function AddContactModal({ isOpen, onClose, onContactAdded }) {
     name: '',
     company: '',
     position: '',
+    linkedin_url: '',
     school: '',
     major: '',
     grad_year: '',
@@ -37,6 +38,7 @@ export default function AddContactModal({ isOpen, onClose, onContactAdded }) {
       name: formData.name,
       company: formData.company || null,
       position: formData.position || null,
+      linkedin_url: formData.linkedin_url || null,
       school: formData.school || null,
       major: formData.major || null,
       grad_year: formData.grad_year ? parseInt(formData.grad_year) : null,
@@ -55,7 +57,7 @@ export default function AddContactModal({ isOpen, onClose, onContactAdded }) {
       setError(error.message)
     } else {
       setFormData({
-        name: '', company: '', position: '', school: '', major: '',
+        name: '', company: '', position: '', linkedin_url: '', school: '', major: '',
         grad_year: '', email: '', phone: '', last_contact_date: '',
         chat_length: '', chat_feel: '', relationship_status: '', notes: ''
       })
@@ -117,6 +119,20 @@ export default function AddContactModal({ isOpen, onClose, onContactAdded }) {
                 name="position"
                 value={formData.position}
                 onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                LinkedIn URL
+              </label>
+              <input
+                type="url"
+                name="linkedin_url"
+                value={formData.linkedin_url}
+                onChange={handleChange}
+                placeholder="https://linkedin.com/in/..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>

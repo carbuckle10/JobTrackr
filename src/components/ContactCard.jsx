@@ -23,6 +23,7 @@ export default function ContactCard({ contact, onUpdate }) {
     name: contact.name || '',
     company: contact.company || '',
     position: contact.position || '',
+    linkedin_url: contact.linkedin_url || '',
     school: contact.school || '',
     major: contact.major || '',
     grad_year: contact.grad_year ?? '',
@@ -57,6 +58,7 @@ export default function ContactCard({ contact, onUpdate }) {
         name: formData.name,
         company: formData.company || null,
         position: formData.position || null,
+        linkedin_url: formData.linkedin_url || null,
         school: formData.school || null,
         major: formData.major || null,
         grad_year: formData.grad_year ? parseInt(formData.grad_year) : null,
@@ -82,6 +84,7 @@ export default function ContactCard({ contact, onUpdate }) {
       name: contact.name || '',
       company: contact.company || '',
       position: contact.position || '',
+      linkedin_url: contact.linkedin_url || '',
       school: contact.school || '',
       major: contact.major || '',
       grad_year: contact.grad_year ?? '',
@@ -142,6 +145,17 @@ export default function ContactCard({ contact, onUpdate }) {
               name="position"
               value={formData.position}
               onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">LinkedIn URL</label>
+            <input
+              type="url"
+              name="linkedin_url"
+              value={formData.linkedin_url}
+              onChange={handleChange}
+              placeholder="https://linkedin.com/in/..."
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
           </div>
@@ -291,7 +305,22 @@ export default function ContactCard({ contact, onUpdate }) {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900">{contact.name}</h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-gray-900">{contact.name}</h3>
+            {contact.linkedin_url && (
+              <a
+                href={contact.linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View LinkedIn profile"
+                className="text-[#0A66C2] hover:opacity-75 transition-opacity flex-shrink-0"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </a>
+            )}
+          </div>
           {(contact.position || contact.company) && (
             <p className="text-sm text-gray-500">
               {contact.position}{contact.position && contact.company && ' at '}{contact.company}

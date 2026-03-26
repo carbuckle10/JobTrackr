@@ -227,6 +227,13 @@ ALTER TABLE applications
   ADD COLUMN IF NOT EXISTS application_url TEXT;
 
 -- ============================================================================
+-- MIGRATION: Add LinkedIn URL to contacts
+-- ============================================================================
+
+ALTER TABLE contacts
+  ADD COLUMN IF NOT EXISTS linkedin_url TEXT;
+
+-- ============================================================================
 -- MIGRATION: User preferences (email reminders, follow-up interval)
 -- ============================================================================
 
