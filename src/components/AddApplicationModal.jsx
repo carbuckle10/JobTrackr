@@ -10,6 +10,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
   const [formData, setFormData] = useState({
     company: '',
     position: '',
+    application_url: '',
     selectedContactIds: [],
     connection: '',
     date_applied: '',
@@ -53,6 +54,7 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
       user_id: user.id,
       company: formData.company,
       position: formData.position || null,
+      application_url: formData.application_url || null,
       connection: formData.connection || null,
       date_applied: formData.date_applied || null,
       deadline: formData.deadline || null,
@@ -81,8 +83,8 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
 
     setLoading(false)
     setFormData({
-      company: '', position: '', selectedContactIds: [], connection: '', date_applied: '',
-      deadline: '', date_responded: '', interview_stage: '', num_interviews: '',
+      company: '', position: '', application_url: '', selectedContactIds: [], connection: '',
+      date_applied: '', deadline: '', date_responded: '', interview_stage: '', num_interviews: '',
       status: 'Pending', notes: ''
     })
     onApplicationAdded()
@@ -129,6 +131,20 @@ export default function AddApplicationModal({ isOpen, onClose, onApplicationAdde
                 name="position"
                 value={formData.position}
                 onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Job Posting URL
+              </label>
+              <input
+                type="url"
+                name="application_url"
+                value={formData.application_url}
+                onChange={handleChange}
+                placeholder="https://..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
               />
             </div>

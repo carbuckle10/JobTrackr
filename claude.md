@@ -29,11 +29,12 @@ A job application tracking app built with React and Supabase. Track job applicat
 - **Applications Tracking:** Manage job applications with company, position, status, interview stages, and notes
 - **Contact Management:** Build and organize your professional network
 - **Multi-Contact Support:** Link multiple contacts to each application (referrals, recruiters, hiring managers)
-- **Search & Filter:** Quickly find applications and contacts with real-time search
-- **Dashboard:** View statistics and recent activity at a glance
+- **Search & Filter:** Quickly find applications and contacts with real-time search; Applications page also has status tabs (All/Pending/Accepted/Denied) and stage chips (Applied through Offer) that compose with search
+- **Dashboard:** View statistics, recent activity, and analytics charts at a glance
 - **Cross-Navigation:** Click contact names to navigate and highlight them in your network
 - **Notification Bell:** In-app bell icon in the nav shows overdue follow-up contacts based on a configurable interval
-- **Settings:** User preferences for follow-up reminder interval and notification toggle
+- **Password Reset:** Forgot password flow on login page sends a reset email; `/reset-password` handles the magic-link redirect
+- **Settings:** User preferences for follow-up reminder interval, notification toggle, and account deletion (Danger Zone)
 
 ## Tech Stack
 
@@ -65,7 +66,8 @@ src/
 │   ├── ApplicationsPage.jsx    # Applications list with search + filters
 │   ├── NetworkPage.jsx         # Contacts list with search
 │   ├── SettingsPage.jsx        # User preferences (notification bell interval)
-│   ├── LoginPage.jsx           # Login form
+│   ├── LoginPage.jsx           # Login form + forgot password flow
+│   ├── ResetPasswordPage.jsx   # Password reset via email magic link
 │   └── SignUpPage.jsx          # Sign up form
 ├── App.jsx            # Router configuration
 ├── main.jsx           # App entry point
@@ -97,7 +99,7 @@ All tables have RLS policies enabled to ensure users can only access their own d
 
 ## Authentication
 
-Uses Supabase Auth with email/password. Protected routes redirect to `/login` if not authenticated.
+Uses Supabase Auth with email/password. Protected routes redirect to `/login` if not authenticated. Forgot password sends a Supabase reset email; the link redirects to `/reset-password` where the user sets a new password. The JobTrackr logo in the nav header is a link to `/` (Home nav button was removed).
 
 ## Environment Variables
 
@@ -159,4 +161,10 @@ Both ApplicationCard and ContactCard support:
 
 ### Settings Page
 
-`SettingsPage.jsx` reads/writes `user_preferences` via upsert on `user_id`. Manages two fields: `email_reminders_enabled` (toggle) and `follow_up_reminder_days` (number input, 1–90).
+`SettingsPage.jsx` reads/writes `user_preferences` via upsert on `user_id`. Manages two fields: `email_reminders_enabled` (toggle) and `follow_up_reminder_days` (number input, 1–90). Also has a **Danger Zone** section for account deletion: user must type `DELETE` to confirm, then a `delete_user` RPC wipes all data and the auth user, followed by sign-out.
+
+### Application Filter Tabs
+
+`ApplicationsPage.jsx` has two rows of filter controls that compose with the text search:
+- **Status tabs:** All / Pending / Accepted / Denied — each shows a live count
+- **Stage chips:** Applied, Phone Screen, Interview, Final Round, Offer — toggleable, multiple can be active at once

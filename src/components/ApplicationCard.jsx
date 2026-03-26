@@ -3,6 +3,38 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { getDeadlineUrgency, formatDeadlineDate } from '../lib/deadlineUtils'
 
+function getDomain(url) {
+  try {
+    const hostname = new URL(url).hostname
+    const parts = hostname.replace(/^www\./, '').split('.')
+    return parts.length >= 2 ? parts.slice(-2).join('.') : hostname
+  } catch {
+    return null
+  }
+}
+
+function CompanyLogo({ url, company }) {
+  const [imgError, setImgError] = useState(false)
+  const domain = url ? getDomain(url) : null
+
+  if (domain && !imgError) {
+    return (
+      <img
+        src={`https://logo.clearbit.com/${domain}`}
+        alt={company}
+        onError={() => setImgError(true)}
+        className="w-9 h-9 rounded object-contain bg-gray-50 border border-gray-100 flex-shrink-0"
+      />
+    )
+  }
+
+  return (
+    <div className="w-9 h-9 rounded bg-gray-100 border border-gray-100 flex items-center justify-center text-sm font-semibold text-gray-500 flex-shrink-0">
+      {company?.charAt(0)?.toUpperCase() || '?'}
+    </div>
+  )
+}
+
 const statusColors = {
   Pending: 'bg-yellow-100 text-yellow-800',
   Accepted: 'bg-green-100 text-green-800',
@@ -27,6 +59,7 @@ export default function ApplicationCard({ application, onUpdate }) {
   const [formData, setFormData] = useState({
     company: application.company || '',
     position: application.position || '',
+    application_url: application.application_url || '',
     connection: application.connection || '',
     date_applied: application.date_applied || '',
     deadline: application.deadline || '',
@@ -74,6 +107,7 @@ export default function ApplicationCard({ application, onUpdate }) {
       .update({
         company: formData.company,
         position: formData.position || null,
+        application_url: formData.application_url || null,
         connection: formData.connection || null,
         date_applied: formData.date_applied || null,
         deadline: formData.deadline || null,
@@ -110,6 +144,7 @@ export default function ApplicationCard({ application, onUpdate }) {
     setFormData({
       company: application.company || '',
       position: application.position || '',
+      application_url: application.application_url || '',
       connection: application.connection || '',
       date_applied: application.date_applied || '',
       deadline: application.deadline || '',
@@ -159,6 +194,17 @@ export default function ApplicationCard({ application, onUpdate }) {
               name="position"
               value={formData.position}
               onChange={handleChange}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Job Posting URL</label>
+            <input
+              type="url"
+              name="application_url"
+              value={formData.application_url}
+              onChange={handleChange}
+              placeholder="https://..."
               className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
           </div>
@@ -324,11 +370,30 @@ export default function ApplicationCard({ application, onUpdate }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between pb-3 border-b border-gray-100 mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900">{application.company}</h3>
-          {application.position && (
-            <p className="text-sm text-gray-500">{application.position}</p>
-          )}
+        <div className="flex items-center gap-3">
+          <CompanyLogo url={application.application_url} company={application.company} />
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-semibold text-gray-900">{application.company}</h3>
+              {application.application_url && (
+                <a
+                  href={application.application_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="text-gray-400 hover:text-blue-500 transition-colors"
+                  title="Open job posting"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
+            </div>
+            {application.position && (
+              <p className="text-sm text-gray-500">{application.position}</p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {application.interview_stage && (

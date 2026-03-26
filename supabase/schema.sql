@@ -220,6 +220,13 @@ ALTER TABLE applications
   ADD COLUMN IF NOT EXISTS deadline DATE;
 
 -- ============================================================================
+-- MIGRATION: Add job posting URL to applications
+-- ============================================================================
+
+ALTER TABLE applications
+  ADD COLUMN IF NOT EXISTS application_url TEXT;
+
+-- ============================================================================
 -- MIGRATION: User preferences (email reminders, follow-up interval)
 -- ============================================================================
 
