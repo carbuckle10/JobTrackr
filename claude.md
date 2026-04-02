@@ -29,7 +29,7 @@ A job application tracking app built with React and Supabase. Track job applicat
 - **Applications Tracking:** Manage job applications with company, position, status, interview stages, and notes
 - **Contact Management:** Build and organize your professional network
 - **Multi-Contact Support:** Link multiple contacts to each application (referrals, recruiters, hiring managers)
-- **Search & Filter:** Quickly find applications and contacts with real-time search; Applications page also has status tabs (All/Pending/Accepted/Denied) and stage chips (Applied through Offer) that compose with search
+- **Search & Filter:** Quickly find applications and contacts with real-time search; Applications page has status tabs, stage chips, and deadline filter chips (Overdue, Due this week); Network page has a Needs Follow-up tab
 - **Job Posting Link & Company Logo:** Each application can store a job posting URL; the card header shows the company logo (fetched from Clearbit via the URL's domain) and an external link icon; falls back to a letter avatar if no logo is found
 - **LinkedIn Profiles:** Each contact can store a LinkedIn URL; a LinkedIn icon appears next to the contact's name in the card header for one-click access
 - **Dashboard:** View statistics, recent activity, and analytics charts at a glance
@@ -37,6 +37,12 @@ A job application tracking app built with React and Supabase. Track job applicat
 - **Notification Bell:** In-app bell icon in the nav shows overdue follow-up contacts based on a configurable interval
 - **Password Reset:** Forgot password flow on login page sends a reset email; `/reset-password` handles the magic-link redirect
 - **Settings:** User preferences for follow-up reminder interval, notification toggle, and account deletion (Danger Zone)
+- **Sort Controls:** Applications can be sorted by newest, oldest, deadline, or company A–Z; Contacts by recently added, name A–Z, or last contacted
+- **Days-Since-Contact Badge:** Each ContactCard shows a color-coded badge indicating days since last contact (green <7d, yellow <14d, red ≥14d, gray if never)
+- **Copy to Clipboard:** One-click copy buttons on email and phone in ContactCard with 1.5s checkmark feedback
+- **Quick Status Change:** ApplicationCard status badge is an inline dropdown — change Pending/Accepted/Denied without entering edit mode
+- **Linked Applications on Contacts:** ContactCard has an expandable "Linked Applications" section that lazy-fetches which applications the contact is tied to
+- **CSV Export:** Applications and Contacts pages each have an Export CSV button that downloads the current filtered/sorted view
 
 ## Tech Stack
 
@@ -65,8 +71,8 @@ src/
 │   └── deadlineUtils.js        # Deadline calculation helpers
 ├── pages/             # Route page components
 │   ├── HomePage.jsx            # Home/dashboard page with stats
-│   ├── ApplicationsPage.jsx    # Applications list with search + filters
-│   ├── NetworkPage.jsx         # Contacts list with search
+│   ├── ApplicationsPage.jsx    # Applications list with search, filters, sort, deadline filter, CSV export
+│   ├── NetworkPage.jsx         # Contacts list with search, follow-up filter, sort, CSV export
 │   ├── SettingsPage.jsx        # User preferences (notification bell interval)
 │   ├── LoginPage.jsx           # Login form + forgot password flow
 │   ├── ResetPasswordPage.jsx   # Password reset via email magic link
@@ -173,8 +179,30 @@ Both ApplicationCard and ContactCard support:
 
 `ContactCard.jsx` shows a LinkedIn SVG icon (`fill="currentColor"`, color `#0A66C2`) next to the contact name when `linkedin_url` is set. Clicking opens the profile in a new tab. Field is stored as `linkedin_url TEXT` in the `contacts` table and is available in both `AddContactModal` and inline edit mode.
 
-### Application Filter Tabs
+### Application Filter Tabs & Sort
 
-`ApplicationsPage.jsx` has two rows of filter controls that compose with the text search:
+`ApplicationsPage.jsx` has three rows of filter controls plus a sort dropdown, all composing with text search:
 - **Status tabs:** All / Pending / Accepted / Denied — each shows a live count
-- **Stage chips:** Applied, Phone Screen, Interview, Final Round, Offer — toggleable, multiple can be active at once
+- **Stage chips:** Applied, Phone Screen, Interview, Final Round, Offer — toggleable
+- **Deadline chips:** Overdue (red), Due this week (yellow) — toggleable, uses `getDeadlineUrgency` from `deadlineUtils.js`
+- **Sort dropdown:** Newest first (default), Oldest first, Deadline (asc, nulls last), Company A–Z
+
+### Network Filter & Sort
+
+`NetworkPage.jsx` has filter tabs and a sort dropdown:
+- **Follow-up tabs:** All / Needs Follow-up — Needs Follow-up filters contacts where `last_contact_date < now - follow_up_reminder_days` OR date is null; count shown on tab; `follow_up_reminder_days` fetched from `user_preferences` on mount (defaults to 14)
+- **Sort dropdown:** Recently added (default), Name A–Z, Last contacted (asc, nulls first — most overdue first)
+
+### ContactCard Enhancements
+
+- **Days-since badge:** Computed from `last_contact_date` on each render; color-coded green/yellow/red/gray; shown in card header alongside chat feel and relationship badges
+- **Copy buttons:** `copiedField` state (null | 'email' | 'phone') with `navigator.clipboard.writeText`; resets after 1500ms via `setTimeout`
+- **Linked Applications:** `linkedAppsExpanded` + `linkedAppsLoading` state; fetches `application_contacts` joined with `applications` lazily on first expand; displays company, position, and status-colored label
+
+### ApplicationCard Quick Status
+
+The status badge in view mode is a styled `<select>` (same badge classes, `appearance-none border-0`) with `quickStatus` local state synced to `application.status` via `useEffect`. `onChange` saves directly to Supabase and calls `onUpdate()`; `statusSaving` boolean disables the select during the async call.
+
+### CSV Export
+
+Both `ApplicationsPage.jsx` and `NetworkPage.jsx` have an `exportCSV` function and "Export CSV" button (shown only when data exists). Exports the current filtered+sorted view. Uses a local `escapeCSV` helper that wraps values containing commas, quotes, or newlines in double-quoted strings. Downloads via `Blob` + temporary anchor click + `URL.revokeObjectURL`.
