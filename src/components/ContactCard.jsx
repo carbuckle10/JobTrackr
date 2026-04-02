@@ -20,6 +20,9 @@ export default function ContactCard({ contact, onUpdate }) {
   const [saving, setSaving] = useState(false)
   const [notesExpanded, setNotesExpanded] = useState(false)
   const [copiedField, setCopiedField] = useState(null)
+  const [linkedApps, setLinkedApps] = useState([])
+  const [linkedAppsLoading, setLinkedAppsLoading] = useState(false)
+  const [linkedAppsExpanded, setLinkedAppsExpanded] = useState(false)
   const [formData, setFormData] = useState({
     name: contact.name || '',
     company: contact.company || '',
@@ -44,6 +47,19 @@ export default function ContactCard({ contact, onUpdate }) {
       day: 'numeric',
       year: 'numeric'
     })
+  }
+
+  const handleToggleLinkedApps = async () => {
+    if (!linkedAppsExpanded && linkedApps.length === 0) {
+      setLinkedAppsLoading(true)
+      const { data } = await supabase
+        .from('application_contacts')
+        .select('application:application_id(id, company, position, status)')
+        .eq('contact_id', contact.id)
+      setLinkedApps(data?.map(d => d.application).filter(Boolean) || [])
+      setLinkedAppsLoading(false)
+    }
+    setLinkedAppsExpanded(prev => !prev)
   }
 
   const handleCopy = (text, field) => {
@@ -476,6 +492,50 @@ export default function ContactCard({ contact, onUpdate }) {
             {notesExpanded ? notesText : (isLongNotes ? notesText.substring(0, 80) + '...' : notesText)}
           </p>
         </div>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <button
+          onClick={handleToggleLinkedApps}
+          className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`w-3 h-3 transition-transform ${linkedAppsExpanded ? 'rotate-90' : ''}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          Linked Applications
+        </button>
+        {linkedAppsExpanded && (
+          <div className="mt-2">
+            {linkedAppsLoading ? (
+              <p className="text-xs text-gray-400">Loading...</p>
+            ) : linkedApps.length === 0 ? (
+              <p className="text-xs text-gray-400">No linked applications.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {linkedApps.map(app => (
+                  <span
+                    key={app.id}
+                    className="inline-flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-700 px-2.5 py-1 rounded-md"
+                  >
+                    <span className="font-medium">{app.company}</span>
+                    {app.position && <span className="text-gray-400">· {app.position}</span>}
+                    <span className={`font-medium ${
+                      (app.status || 'Pending') === 'Accepted' ? 'text-green-600'
+                      : (app.status || 'Pending') === 'Denied' ? 'text-red-600'
+                      : 'text-yellow-600'
+                    }`}>
+                      {app.status || 'Pending'}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

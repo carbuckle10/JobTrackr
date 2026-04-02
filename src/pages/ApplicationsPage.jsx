@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { getDeadlineUrgency } from '../lib/deadlineUtils'
 import AddApplicationModal from '../components/AddApplicationModal'
 import ApplicationCard from '../components/ApplicationCard'
 
 const STATUS_TABS = ['All', 'Pending', 'Accepted', 'Denied']
-
 const STAGE_TABS = ['Applied', 'Phone Screen', 'Interview', 'Final Round', 'Offer']
+
+const escapeCSV = (val) => {
+  if (val === null || val === undefined) return ''
+  const str = String(val)
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str
+}
 
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState([])
@@ -14,6 +22,8 @@ export default function ApplicationsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeStatus, setActiveStatus] = useState('All')
   const [activeStage, setActiveStage] = useState(null)
+  const [deadlineFilter, setDeadlineFilter] = useState(null)
+  const [sortBy, setSortBy] = useState('newest')
 
   const fetchApplications = async () => {
     setLoading(true)
@@ -57,7 +67,29 @@ export default function ApplicationsPage() {
     )
     const matchesStatus = activeStatus === 'All' || (app.status || 'Pending') === activeStatus
     const matchesStage = !activeStage || app.interview_stage === activeStage
-    return matchesSearch && matchesStatus && matchesStage
+    const matchesDeadline = !deadlineFilter || (() => {
+      const urgency = getDeadlineUrgency(app.deadline)
+      if (deadlineFilter === 'overdue') return urgency?.days < 0
+      if (deadlineFilter === 'this_week') return urgency !== null && urgency.days >= 0 && urgency.days <= 7
+      return true
+    })()
+    return matchesSearch && matchesStatus && matchesStage && matchesDeadline
+  })
+
+  const sortedApplications = [...filteredApplications].sort((a, b) => {
+    switch (sortBy) {
+      case 'oldest':
+        return new Date(a.created_at) - new Date(b.created_at)
+      case 'deadline':
+        if (!a.deadline && !b.deadline) return 0
+        if (!a.deadline) return 1
+        if (!b.deadline) return -1
+        return new Date(a.deadline) - new Date(b.deadline)
+      case 'company':
+        return (a.company || '').localeCompare(b.company || '')
+      default:
+        return new Date(b.created_at) - new Date(a.created_at)
+    }
   })
 
   const statusCounts = STATUS_TABS.reduce((acc, status) => {
@@ -77,16 +109,63 @@ export default function ApplicationsPage() {
     setActiveStatus('All')
   }
 
+  const handleDeadlineFilter = (filter) => {
+    setDeadlineFilter(prev => prev === filter ? null : filter)
+  }
+
+  const clearFilters = () => {
+    setSearchQuery('')
+    setActiveStatus('All')
+    setActiveStage(null)
+    setDeadlineFilter(null)
+  }
+
+  const exportCSV = () => {
+    const headers = ['Company', 'Position', 'Status', 'Stage', 'Date Applied', 'Deadline', 'Date Responded', '# Interviews', 'Contacts', 'Notes', 'Job URL']
+    const rows = sortedApplications.map(app => [
+      app.company,
+      app.position,
+      app.status || 'Pending',
+      app.interview_stage,
+      app.date_applied,
+      app.deadline,
+      app.date_responded,
+      app.num_interviews,
+      app.application_contacts?.map(ac => ac.contact?.name).filter(Boolean).join('; '),
+      app.notes,
+      app.application_url
+    ].map(escapeCSV))
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'applications.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Applications</h2>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-3.5 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 shadow-sm"
-        >
-          + Add Application
-        </button>
+        <div className="flex items-center gap-2">
+          {applications.length > 0 && (
+            <button
+              onClick={exportCSV}
+              className="px-3.5 py-2 border border-gray-300 text-gray-600 text-sm font-medium rounded-md hover:bg-gray-50 hover:border-gray-400 transition-colors"
+            >
+              Export CSV
+            </button>
+          )}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-3.5 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 shadow-sm"
+          >
+            + Add Application
+          </button>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -121,19 +200,50 @@ export default function ApplicationsPage() {
             ))}
           </div>
 
-          {/* Stage chips */}
-          <div className="flex gap-2 flex-wrap">
-            {STAGE_TABS.map(stage => (
+          {/* Stage chips + sort */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              {STAGE_TABS.map(stage => (
+                <button
+                  key={stage}
+                  onClick={() => handleStageTab(stage)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    activeStage === stage
+                      ? 'bg-gray-700 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {stage}
+                </button>
+              ))}
+            </div>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="text-xs px-2 py-1 border border-gray-200 rounded-md text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-gray-400"
+            >
+              <option value="newest">Sort: Newest first</option>
+              <option value="oldest">Sort: Oldest first</option>
+              <option value="deadline">Sort: Deadline</option>
+              <option value="company">Sort: Company A–Z</option>
+            </select>
+          </div>
+
+          {/* Deadline filter chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-gray-400 font-medium">Deadline:</span>
+            {[
+              { key: 'overdue', label: 'Overdue', activeClass: 'bg-red-600 text-white', inactiveClass: 'bg-red-50 text-red-700 hover:bg-red-100' },
+              { key: 'this_week', label: 'Due this week', activeClass: 'bg-yellow-500 text-white', inactiveClass: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' }
+            ].map(({ key, label, activeClass, inactiveClass }) => (
               <button
-                key={stage}
-                onClick={() => handleStageTab(stage)}
+                key={key}
+                onClick={() => handleDeadlineFilter(key)}
                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  activeStage === stage
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  deadlineFilter === key ? activeClass : inactiveClass
                 }`}
               >
-                {stage}
+                {label}
               </button>
             ))}
           </div>
@@ -152,11 +262,11 @@ export default function ApplicationsPage() {
             Add your first application
           </button>
         </div>
-      ) : filteredApplications.length === 0 ? (
+      ) : sortedApplications.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">No applications match your filters.</p>
           <button
-            onClick={() => { setSearchQuery(''); setActiveStatus('All'); setActiveStage(null) }}
+            onClick={clearFilters}
             className="text-gray-900 font-medium hover:underline"
           >
             Clear filters
@@ -164,7 +274,7 @@ export default function ApplicationsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredApplications.map(application => (
+          {sortedApplications.map(application => (
             <ApplicationCard key={application.id} application={application} onUpdate={fetchApplications} />
           ))}
         </div>
