@@ -19,6 +19,7 @@ export default function ContactCard({ contact, onUpdate }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notesExpanded, setNotesExpanded] = useState(false)
+  const [copiedField, setCopiedField] = useState(null)
   const [formData, setFormData] = useState({
     name: contact.name || '',
     company: contact.company || '',
@@ -43,6 +44,12 @@ export default function ContactCard({ contact, onUpdate }) {
       day: 'numeric',
       year: 'numeric'
     })
+  }
+
+  const handleCopy = (text, field) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 1500)
   }
 
   const handleChange = (e) => {
@@ -112,6 +119,24 @@ export default function ContactCard({ contact, onUpdate }) {
 
   const notesText = contact.notes || 'No notes'
   const isLongNotes = notesText.length > 50
+
+  const daysSince = contact.last_contact_date
+    ? Math.floor((new Date() - new Date(contact.last_contact_date)) / 86400000)
+    : null
+  const daysBadgeClass = daysSince === null
+    ? 'bg-gray-100 text-gray-500'
+    : daysSince < 7
+      ? 'bg-green-100 text-green-800'
+      : daysSince < 14
+        ? 'bg-yellow-100 text-yellow-800'
+        : 'bg-red-100 text-red-800'
+  const daysBadgeText = daysSince === null
+    ? 'Never contacted'
+    : daysSince === 0
+      ? 'Today'
+      : daysSince === 1
+        ? '1 day ago'
+        : `${daysSince} days ago`
 
   if (editing) {
     return (
@@ -328,6 +353,9 @@ export default function ContactCard({ contact, onUpdate }) {
           )}
         </div>
         <div className="flex items-center gap-3">
+          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${daysBadgeClass}`}>
+            {daysBadgeText}
+          </span>
           {contact.chat_feel && (
             <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${feelColors[contact.chat_feel] || 'bg-gray-100 text-gray-700'}`}>
               {contact.chat_feel}
@@ -358,9 +386,26 @@ export default function ContactCard({ contact, onUpdate }) {
         <div className="bg-gray-50/60 rounded-md p-2.5">
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
           {contact.email ? (
-            <a href={`mailto:${contact.email}`} className="text-sm font-medium text-blue-600 hover:underline truncate block">
-              {contact.email}
-            </a>
+            <div className="flex items-center gap-1">
+              <a href={`mailto:${contact.email}`} className="text-sm font-medium text-blue-600 hover:underline truncate">
+                {contact.email}
+              </a>
+              <button
+                onClick={() => handleCopy(contact.email, 'email')}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Copy email"
+              >
+                {copiedField === 'email' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           ) : (
             <p className="text-sm font-medium text-gray-900">—</p>
           )}
@@ -368,9 +413,26 @@ export default function ContactCard({ contact, onUpdate }) {
         <div className="bg-gray-50/60 rounded-md p-2.5">
           <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
           {contact.phone ? (
-            <a href={`tel:${contact.phone}`} className="text-sm font-medium text-blue-600 hover:underline">
-              {contact.phone}
-            </a>
+            <div className="flex items-center gap-1">
+              <a href={`tel:${contact.phone}`} className="text-sm font-medium text-blue-600 hover:underline">
+                {contact.phone}
+              </a>
+              <button
+                onClick={() => handleCopy(contact.phone, 'phone')}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Copy phone"
+              >
+                {copiedField === 'phone' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
           ) : (
             <p className="text-sm font-medium text-gray-900">—</p>
           )}

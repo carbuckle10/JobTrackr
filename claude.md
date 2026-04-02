@@ -30,6 +30,8 @@ A job application tracking app built with React and Supabase. Track job applicat
 - **Contact Management:** Build and organize your professional network
 - **Multi-Contact Support:** Link multiple contacts to each application (referrals, recruiters, hiring managers)
 - **Search & Filter:** Quickly find applications and contacts with real-time search; Applications page also has status tabs (All/Pending/Accepted/Denied) and stage chips (Applied through Offer) that compose with search
+- **Job Posting Link & Company Logo:** Each application can store a job posting URL; the card header shows the company logo (fetched from Clearbit via the URL's domain) and an external link icon; falls back to a letter avatar if no logo is found
+- **LinkedIn Profiles:** Each contact can store a LinkedIn URL; a LinkedIn icon appears next to the contact's name in the card header for one-click access
 - **Dashboard:** View statistics, recent activity, and analytics charts at a glance
 - **Cross-Navigation:** Click contact names to navigate and highlight them in your network
 - **Notification Bell:** In-app bell icon in the nav shows overdue follow-up contacts based on a configurable interval
@@ -82,8 +84,8 @@ supabase/
 
 ### Tables
 
-- **applications:** Job application records with company, position, status, salary, interview stages, deadline, and notes
-- **contacts:** Professional network contacts with name, company, position, school, and contact info
+- **applications:** Job application records with company, position, status, interview stages, deadline, application_url, and notes
+- **contacts:** Professional network contacts with name, company, position, school, linkedin_url, and contact info
 - **application_contacts:** Junction table for many-to-many relationships between applications and contacts
 - **user_preferences:** Per-user settings — `follow_up_reminder_days` (int, default 14), `email_reminders_enabled` (bool, stores the in-app bell toggle)
 
@@ -162,6 +164,14 @@ Both ApplicationCard and ContactCard support:
 ### Settings Page
 
 `SettingsPage.jsx` reads/writes `user_preferences` via upsert on `user_id`. Manages two fields: `email_reminders_enabled` (toggle) and `follow_up_reminder_days` (number input, 1–90). Also has a **Danger Zone** section for account deletion: user must type `DELETE` to confirm, then a `delete_user` RPC wipes all data and the auth user, followed by sign-out.
+
+### Company Logo & Job Posting URL
+
+`ApplicationCard.jsx` has a `CompanyLogo` component and a `getDomain` helper. When `application_url` is set, the domain is extracted (stripping `www.` and subdomains) and used to fetch `https://logo.clearbit.com/{domain}`. On `onError`, falls back to a letter-avatar div. The card header shows the logo left of the company name, and an external link icon (opens in new tab) if a URL is present. No API key required.
+
+### LinkedIn URL on Contacts
+
+`ContactCard.jsx` shows a LinkedIn SVG icon (`fill="currentColor"`, color `#0A66C2`) next to the contact name when `linkedin_url` is set. Clicking opens the profile in a new tab. Field is stored as `linkedin_url TEXT` in the `contacts` table and is available in both `AddContactModal` and inline edit mode.
 
 ### Application Filter Tabs
 

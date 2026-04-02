@@ -53,6 +53,8 @@ export default function ApplicationCard({ application, onUpdate }) {
   const navigate = useNavigate()
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [quickStatus, setQuickStatus] = useState(application.status || 'Pending')
   const [notesExpanded, setNotesExpanded] = useState(false)
   const [contacts, setContacts] = useState([])
   const [selectedContactIds, setSelectedContactIds] = useState([])
@@ -93,6 +95,19 @@ export default function ApplicationCard({ application, onUpdate }) {
       fetchContactsAndLinks()
     }
   }, [editing, application.id])
+
+  useEffect(() => {
+    setQuickStatus(application.status || 'Pending')
+  }, [application.status])
+
+  const handleQuickStatusChange = async (e) => {
+    const newStatus = e.target.value
+    setQuickStatus(newStatus)
+    setStatusSaving(true)
+    await supabase.from('applications').update({ status: newStatus }).eq('id', application.id)
+    setStatusSaving(false)
+    onUpdate()
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -401,9 +416,16 @@ export default function ApplicationCard({ application, onUpdate }) {
               {application.interview_stage}
             </span>
           )}
-          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${statusColors[application.status] || 'bg-gray-100 text-gray-800'}`}>
-            {application.status || 'Pending'}
-          </span>
+          <select
+            value={quickStatus}
+            onChange={handleQuickStatusChange}
+            disabled={statusSaving}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium cursor-pointer appearance-none border-0 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 ${statusColors[quickStatus] || 'bg-gray-100 text-gray-800'} ${statusSaving ? 'opacity-50' : ''}`}
+          >
+            <option value="Pending">Pending</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Denied">Denied</option>
+          </select>
           <div className="w-px h-5 bg-gray-200" />
           <button
             onClick={() => setEditing(true)}
